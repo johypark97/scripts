@@ -1,0 +1,36 @@
+#!/bin/bash
+
+function checkWithEcho_command()
+{
+    command -v "$1" > /dev/null && return $( true )
+    echo "cannot find command '$1'"
+    return $( false )
+}
+
+function checkWithEcho_rootPrivileges()
+{
+    (( $( id -u ) )) || return $( true )
+    echo "requires root privileges"
+    return $( false )
+}
+
+function confirmYesNo()
+{
+    local value
+    while :; do
+        read -p "$1 (y/N): " value
+        value=${value:-n}
+        case $value in
+            Y | y) return $( true ) ;;
+            N | n) return $( false ) ;;
+            *) echo "invalid input: $value" ;;
+        esac
+    done
+}
+
+# https://stackoverflow.com/a/5032641
+function strIndex()
+{
+    local x=${1%%$2*}
+    [[ $x == $1 ]] && echo -1 || echo "${#x}"
+}
