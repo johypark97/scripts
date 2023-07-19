@@ -6,21 +6,18 @@
 
 function main()
 {
-    # check build prerequisites
+    # prepare to check required packages
     local check
-    local packages=( autoconf automake cmake curl gettext git libtool ninja-build unzip )
+    local packages=( cmake curl gettext ninja-build unzip )
 
     if command -v dpkg > /dev/null; then
         check="dpkg -l"
-        packages+=( doxygen g++ libtool-bin pkg-config )
-    elif command -v rpm > /dev/null; then
-        check="rpm -q"
-        packages+=( gcc gcc-c++ make patch pkgconfig )
     else
         echo "supported package manager is not detected. cannot proceed."
         exit 1
     fi
 
+    # check required packages
     local abort=0
     local notInstalled
     local i
@@ -39,13 +36,14 @@ function main()
     # prepare build environment
     local GIT_URL=https://github.com/neovim/neovim
     local PREFIX=/usr/local/programs/neovim
-    local WORKING_DIR=$HOME/build-neovim
+    local WORKING_DIR=$HOME/neovim-build
 
     if [[ -d $WORKING_DIR ]]; then
         echo "working directory '$WORKING_DIR' is exists. cannot proceed."
         exit 1
     fi
 
+    # build
     git clone $GIT_URL $WORKING_DIR
     cd $WORKING_DIR
     git checkout stable
