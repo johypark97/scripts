@@ -26,6 +26,7 @@ function main()
 
     git config --global core.editor vi
     git config --global credential.helper store
+    git config --global init.defaultBranch main
     git config --global pull.ff only
     git config --global pull.rebase false
 }
