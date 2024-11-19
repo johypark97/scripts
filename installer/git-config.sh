@@ -48,7 +48,9 @@ function main()
     fi
 
     declare -A map
+    map[core.autocrlf]=input
     map[core.editor]=vi
+    map[core.filemode]=true
     map[credential.helper]=store
     map[init.defaultBranch]=main
     map[pull.ff]=only
