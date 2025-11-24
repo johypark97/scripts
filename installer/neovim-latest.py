@@ -7,7 +7,7 @@ from pathlib import Path
 from platform import machine, system
 from shutil import which
 from subprocess import CompletedProcess, run
-from typing import Literal, TypedDict
+from typing import Callable, Literal, TypedDict
 from urllib.request import Request, urlopen
 
 
@@ -250,7 +250,7 @@ class NeovimInstaller:
 
             print(f"- {asset['name']} ({size})")
 
-    def install(self, path: Path) -> None:
+    def install(self, path: Path) -> str:
         target_asset_name = self._get_target_asset_name()
 
         latest_release = self.__api.get_latest_release()
@@ -259,17 +259,13 @@ class NeovimInstaller:
         self._download_asset(target_asset, path)
         path.chmod(self.PERMISSION)
 
-        print(f"Neovim {latest_release['tag_name']} installed successfully:")
-        print("-", path)
+        return latest_release["tag_name"]
 
     def uninstall(self, path: Path) -> None:
         if not path.exists():
             raise FileNotFoundError(f"File '{path}' does not exist.")
 
         path.unlink()
-
-        print(f"Neovim uninstalled successfully:")
-        print("-", path)
 
     def _get_target_asset_name(self) -> str:
         target_asset_name = self.ASSET_NAME_MAP.get((self.__system, self.__machine))
@@ -487,59 +483,57 @@ class Main:
                 Main.uninstall_alternatives(args.name, neovim_path)
 
     @staticmethod
+    def handle_exception(f: Callable) -> Callable:
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except Exception as e:
+                print("Error:", e)
+
+        return wrapper
+
+    @staticmethod
+    @handle_exception
     def fetch_latest_neovim_release() -> None:
-        try:
-            NeovimInstaller().print_latest_release_information()
-        except Exception as e:
-            print("Error:", e)
+        NeovimInstaller().print_latest_release_information()
 
     @staticmethod
+    @handle_exception
     def install_neovim(path: Path) -> None:
-        try:
-            NeovimInstaller().install(path)
-        except Exception as e:
-            print("Error:", e)
+        tag_name = NeovimInstaller().install(path)
+        print(f"Neovim {tag_name} installed successfully:")
+        print("-", path)
 
     @staticmethod
+    @handle_exception
     def uninstall_neovim(path: Path) -> None:
-        try:
-            NeovimInstaller().uninstall(path)
-        except Exception as e:
-            print("Error:", e)
+        NeovimInstaller().uninstall(path)
+        print(f"Neovim uninstalled successfully:")
+        print("-", path)
 
     @staticmethod
+    @handle_exception
     def list_alternatives(name: str) -> None:
-        try:
-            result = UpdateAlternatives().list(name)
-            print(result.stdout, end="")
-        except Exception as e:
-            print("Error:", e)
+        result = UpdateAlternatives().list(name)
+        print(result.stdout.strip())
 
     @staticmethod
+    @handle_exception
     def query_alternatives(name: str) -> None:
-        try:
-            result = UpdateAlternatives().query(name)
-            print(result.stdout, end="")
-        except Exception as e:
-            print("Error:", e)
+        result = UpdateAlternatives().query(name)
+        print(result.stdout.strip())
 
     @staticmethod
+    @handle_exception
     def install_alternatives(link: Path, name: str, path: Path, priority: int) -> None:
-        try:
-            UpdateAlternatives().install(link, name, path, priority)
-            print(f"Alternatives '{name}' installed successfully:")
-            print(f"- {path} ({priority})")
-        except Exception as e:
-            print("Error:", e)
+        result = UpdateAlternatives().install(link, name, path, priority)
+        print(result.stdout.strip())
 
     @staticmethod
+    @handle_exception
     def uninstall_alternatives(name: str, path: Path) -> None:
-        try:
-            UpdateAlternatives().uninstall(name, path)
-            print(f"Alternatives '{name}' uninstalled successfully:")
-            print("-", path)
-        except Exception as e:
-            print("Error:", e)
+        result = UpdateAlternatives().uninstall(name, path)
+        print(result.stdout.strip())
 
 
 if __name__ == "__main__":
