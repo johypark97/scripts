@@ -18,7 +18,7 @@ function main()
     fi
 
     # install
-    local packages=( bash-completion curl git unzip zip )
+    local packages=( bash-completion curl git unzip wget zip )
     $install ${packages[@]}
 }
 
