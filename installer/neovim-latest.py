@@ -503,6 +503,8 @@ class Main:
         tag_name = NeovimInstaller().install(path)
         print(f"Neovim {tag_name} installed successfully:")
         print("-", path)
+        print("If Neovim does not run, try installing the following packages:")
+        print("- fuse3")
 
     @staticmethod
     @handle_exception
