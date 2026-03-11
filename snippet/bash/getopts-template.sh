@@ -69,6 +69,10 @@ function main()
 
     local task=$1
     case $task in
+        help)
+            echo "$STRING_HELP"
+            exit 0
+            ;;
         *)
             echo "invalid task: $task"
             echo "$STRING_HELP_INFO"
