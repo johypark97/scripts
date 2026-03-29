@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 
-function checkWithEcho_command()
+function checkCommand()
 {
-    command -v "$1" > /dev/null && return $( true )
-    echo "cannot find command '$1'"
-    return $( false )
+    command -v "$1" > /dev/null || {
+        echo "cannot find command '$1'" >&2
+        false
+    }
 }
 
-function checkWithEcho_rootPrivileges()
+function checkRootPrivileges()
 {
-    (( $( id -u ) )) || return $( true )
-    echo "requires root privileges"
-    return $( false )
+    (( !EUID )) || {
+        echo "requires root privileges" >&2
+        false
+    }
 }
 
 function confirmYesNo()
@@ -19,10 +21,10 @@ function confirmYesNo()
     local value
     while :; do
         read -p "$1 (y/N): " value
-        value=${value:-n}
+        value=${value:-N}
         case $value in
-            Y | y) return $( true ) ;;
-            N | n) return $( false ) ;;
+            Y | y) true; return ;;
+            N | n) false; return ;;
             *) echo "invalid input: $value" ;;
         esac
     done

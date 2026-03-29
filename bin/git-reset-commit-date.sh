@@ -4,9 +4,9 @@
 # -------- const --------
 # =======================
 
-BASE_COMMAND=git-filter-repo
+readonly BASE_COMMAND=git-filter-repo
 
-CALLBACK_SCRIPT=$( cat << EOF
+readonly CALLBACK_SCRIPT=$( cat << EOF
 commit.committer_date = commit.author_date
 EOF
 )
@@ -15,9 +15,9 @@ EOF
 # -------- string --------
 # ========================
 
-STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
+readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
 
-STRING_HELP=$( cat << EOF
+readonly STRING_HELP=$( cat << EOF
   Reset the commit date to the author date by the specified number of commits
 from HEAD.
 
@@ -49,11 +49,12 @@ function getopts_printError()
     fi
 }
 
-function checkWithEcho_command()
+function checkCommand()
 {
-    command -v "$1" > /dev/null && return $( true )
-    echo "cannot find command '$1'"
-    return $( false )
+    command -v "$1" > /dev/null || {
+        echo "cannot find command '$1'" >&2
+        false
+    }
 }
 
 function confirmYesNo()
@@ -61,10 +62,10 @@ function confirmYesNo()
     local value
     while :; do
         read -p "$1 (y/N): " value
-        value=${value:-n}
+        value=${value:-N}
         case $value in
-            Y | y) return $( true ) ;;
-            N | n) return $( false ) ;;
+            Y | y) true; return ;;
+            N | n) false; return ;;
             *) echo "invalid input: $value" ;;
         esac
     done
@@ -76,7 +77,11 @@ function confirmYesNo()
 
 function main()
 {
-    checkWithEcho_command git-filter-repo || exit 1
+    checkCommand $BASE_COMMAND || {
+        echo "please install the following packages:"
+        echo "- git-filter-repo"
+        exit 1
+    }
 
     OPTIND=1
     while getopts :h opt; do

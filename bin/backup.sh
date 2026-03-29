@@ -4,9 +4,9 @@
 # -------- string --------
 # ========================
 
-STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
+readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
 
-STRING_HELP=$( cat << EOF
+readonly STRING_HELP=$( cat << EOF
 Usage:
     $( basename "$0" ) (option...) [filename] [target...]
 
@@ -33,11 +33,12 @@ function getopts_printError()
     fi
 }
 
-function checkWithEcho_command()
+function checkCommand()
 {
-    command -v "$1" > /dev/null && return $( true )
-    echo "cannot find command '$1'"
-    return $( false )
+    command -v "$1" > /dev/null || {
+        echo "cannot find command '$1'" >&2
+        false
+    }
 }
 
 # ======================
@@ -46,7 +47,7 @@ function checkWithEcho_command()
 
 function main()
 {
-    checkWithEcho_command zip || exit 1
+    checkCommand zip || exit 1
 
     local flagDate=0
     local flagTime=0

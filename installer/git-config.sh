@@ -9,10 +9,10 @@ function confirmYesNo()
     local value
     while :; do
         read -p "$1 (y/N): " value
-        value=${value:-n}
+        value=${value:-N}
         case $value in
-            Y | y) return $( true ) ;;
-            N | n) return $( false ) ;;
+            Y | y) true; return ;;
+            N | n) false; return ;;
             *) echo "invalid input: $value" ;;
         esac
     done
@@ -40,14 +40,14 @@ function setGitConfig()
 
 function main()
 {
-    local GIT_CONFIG_COMMAND="git config --global"
+    local -r GIT_CONFIG_COMMAND="git config --global"
 
     if ! command -v git > /dev/null; then
         echo "git is not installed"
         exit 1
     fi
 
-    declare -A map
+    local -A map
     map[core.autocrlf]=input
     map[core.editor]=vi
     map[core.filemode]=true

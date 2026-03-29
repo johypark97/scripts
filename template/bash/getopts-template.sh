@@ -4,9 +4,9 @@
 # -------- string --------
 # ========================
 
-STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
+readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
 
-STRING_HELP=$( cat << EOF
+readonly STRING_HELP=$( cat << EOF
 Usage:
     $( basename "$0" ) (option...) [task]
 

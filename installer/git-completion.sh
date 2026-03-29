@@ -11,8 +11,8 @@ function main()
         exit 1
     fi
 
-    local FILE=~/.git-completion.bash
-    local URL=https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+    local -r FILE=$HOME/.git-completion.bash
+    local -r URL=https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
     curl -o $FILE $URL
 }
 
