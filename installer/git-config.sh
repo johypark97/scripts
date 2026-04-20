@@ -34,6 +34,20 @@ function setGitConfig()
     $COMMAND $1 $2
 }
 
+function findCredentialHelper()
+{
+    local -r WIN_GCM_PATH='/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe'
+
+    if grep -iq WSL /proc/version; then
+        if [[ -x $WIN_GCM_PATH ]]; then
+            echo ${WIN_GCM_PATH/ /\\ }
+            return
+        fi
+    fi
+
+    echo store
+}
+
 # ======================
 # -------- main --------
 # ======================
@@ -51,7 +65,7 @@ function main()
     map[core.autocrlf]=input
     map[core.editor]=vi
     map[core.filemode]=true
-    map[credential.helper]=store
+    map[credential.helper]=$( findCredentialHelper )
     map[init.defaultBranch]=main
     map[pull.ff]=only
     map[pull.rebase]=false
@@ -64,7 +78,7 @@ function main()
 
         local currentConfig=$( $GIT_CONFIG_COMMAND $key )
         if [[ -n $currentConfig ]]; then
-            [[ $currentConfig == $value ]] && continue
+            [[ $currentConfig == "$value" ]] && continue
 
             local message="overwirte it"
             [[ -n $value ]] && message+=" to '$value'"
@@ -86,7 +100,7 @@ function main()
             done
         fi
 
-        $GIT_CONFIG_COMMAND $key $value
+        $GIT_CONFIG_COMMAND $key "$value"
     done
 }
 
