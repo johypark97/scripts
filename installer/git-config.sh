@@ -8,7 +8,7 @@ function confirmYesNo()
 {
     local value
     while :; do
-        read -p "$1 (y/N): " value
+        read -ep "$1 (y/N): " value
         value=${value:-N}
         case $value in
             Y | y) true; return ;;
@@ -91,7 +91,7 @@ function main()
         if [[ -z $value ]]; then
             while :; do
                 local input
-                read -p "enter a value for '$key': " input
+                read -ep "enter a value for '$key': " input
                 if [[ -n $input ]]; then
                     value=$input
                     break

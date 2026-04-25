@@ -20,7 +20,7 @@ function confirmYesNo()
 {
     local value
     while :; do
-        read -p "$1 (y/N): " value
+        read -ep "$1 (y/N): " value
         value=${value:-N}
         case $value in
             Y | y) true; return ;;
