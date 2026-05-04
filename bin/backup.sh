@@ -7,12 +7,17 @@
 readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
 
 readonly STRING_HELP=$( cat << EOF
+Compresses files and automatically appends the date and time.
+
 Usage:
     $( basename "$0" ) (option...) [filename] [target...]
 
 Options:
     -d    add date to filename
     -t    add time to filename
+    -g    compress the archive with gzip. it does not affect the -z option.
+    -z    use zip instead tar
+    -D    dry run
     -v    enable verbose
     -h    print help messages
 EOF
@@ -33,31 +38,27 @@ function getopts_printError()
     fi
 }
 
-function checkCommand()
-{
-    command -v "$1" > /dev/null || {
-        echo "cannot find command '$1'" >&2
-        false
-    }
-}
-
 # ======================
 # -------- main --------
 # ======================
 
 function main()
 {
-    checkCommand zip || exit 1
-
     local flagDate=0
     local flagTime=0
+    local flagGzip=0
+    local flagZip=0
+    local flagDryRun=0
     local flagVerbose=0
 
     OPTIND=1
-    while getopts :dtvh opt; do
+    while getopts :dtgzDvh opt; do
         case $opt in
             d) flagDate=1 ;;
             t) flagTime=1 ;;
+            g) flagGzip=1 ;;
+            z) flagZip=1 ;;
+            D) flagDryRun=1 ;;
             v) flagVerbose=1 ;;
             h)
                 echo "$STRING_HELP"
@@ -78,11 +79,18 @@ function main()
         exit 1
     fi
 
-    local filename=$1
+    local archiveFilename=$1
     shift 1
-    (( flagDate )) && filename+=-$( date +%Y%m%d )
-    (( flagTime )) && filename+=-$( date +%H%M%S )
-    filename+=.zip
+    (( flagDate )) && archiveFilename+=-$( date +%Y%m%d )
+    (( flagTime )) && archiveFilename+=-$( date +%H%M%S )
+
+    if (( flagZip )); then
+        archiveFilename+=.zip
+    elif (( flagGzip )); then
+        archiveFilename+=.tar.gz
+    else
+        archiveFilename+=.tar
+    fi
 
     if (( ! $# )); then
         echo "requires targets"
@@ -90,10 +98,23 @@ function main()
         exit 1
     fi
 
-    local cmd="zip -r9"
-    (( flagVerbose )) && cmd+=" -v"
+    local verboseOption
+    (( flagVerbose )) && verboseOption=v
 
-    $cmd "$filename" "$@"
+    local archiveCommand
+    if (( flagZip )); then
+        archiveCommand="zip -r$verboseOption"
+    elif (( flagGzip )); then
+        archiveCommand="tar -cz${verboseOption}f"
+    else
+        archiveCommand="tar -c${verboseOption}f"
+    fi
+
+    if (( flagDryRun )); then
+        echo "$archiveCommand $archiveFilename $@"
+    else
+        $archiveCommand "$archiveFilename" "$@"
+    fi
 }
 
 main "$@"
