@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-# ========================
-# -------- string --------
-# ========================
+: # enable line-specific shellcheck suppression
 
-readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
+# shellcheck disable=SC2155
+readonly HELP_HINT="Try '$( basename "$0" ) -h' for more information."
 
-readonly STRING_HELP=$( cat << EOF
-Compresses files and automatically appends the date and time.
+# shellcheck disable=SC2155
+readonly HELP_MAIN=$( cat << EOF
+Archive files and append timestamp to the filename.
 
 Usage:
-    $( basename "$0" ) (option...) [filename] [target...]
+    $( basename "$0" ) [OPTION]... FILENAME TARGET...
 
 Options:
     -d    add date to filename
@@ -18,102 +18,94 @@ Options:
     -g    compress the archive with gzip. it does not affect the -z option.
     -z    use zip instead tar
     -D    dry run
-    -v    enable verbose
-    -h    print help messages
+    -v    enable verbose output
+    -h    display this help and exit
 EOF
 )
 
-# ==========================
-# -------- function --------
-# ==========================
-
-function getopts_printError()
+main()
 {
-    if [[ -n $2 ]]; then
-        case $1 in
-            :) echo "option requires an argument: -$2" ;;
-            ?) echo "invalid option: -$2" ;;
-            *) echo "unknown error" ;;
-        esac
-    fi
-}
+    local opt_date=0
+    local opt_time=0
+    local opt_gzip=0
+    local opt_zip=0
+    local opt_dry_run=0
+    local opt_verbose=0
 
-# ======================
-# -------- main --------
-# ======================
-
-function main()
-{
-    local flagDate=0
-    local flagTime=0
-    local flagGzip=0
-    local flagZip=0
-    local flagDryRun=0
-    local flagVerbose=0
-
-    OPTIND=1
+    local OPTIND=1 OPTARG opt
     while getopts :dtgzDvh opt; do
         case $opt in
-            d) flagDate=1 ;;
-            t) flagTime=1 ;;
-            g) flagGzip=1 ;;
-            z) flagZip=1 ;;
-            D) flagDryRun=1 ;;
-            v) flagVerbose=1 ;;
+            d) opt_date=1 ;;
+            t) opt_time=1 ;;
+            g) opt_gzip=1 ;;
+            z) opt_zip=1 ;;
+            D) opt_dry_run=1 ;;
+            v) opt_verbose=1 ;;
             h)
-                echo "$STRING_HELP"
-                exit 0
+                printf '%s\n' "$HELP_MAIN"
+                return 0
+                ;;
+            :)
+                [[ -n $OPTARG ]] && \
+                    printf 'option requires an argument: -%s\n' "$OPTARG" >&2
+                printf '%s\n' "$HELP_HINT" >&2
+                return 1
+                ;;
+            \?)
+                [[ -n $OPTARG ]] && \
+                    printf 'invalid option: -%s\n' "$OPTARG" >&2
+                printf '%s\n' "$HELP_HINT" >&2
+                return 1
                 ;;
             *)
-                getopts_printError "$opt" "$OPTARG"
-                echo "$STRING_HELP_INFO"
-                exit 1
+                printf 'unexpected error\n' >&2
+                return 1
                 ;;
         esac
     done
     shift $(( OPTIND - 1 ))
 
-    if (( ! $# )); then
-        echo "requires a filename"
-        echo "$STRING_HELP_INFO"
-        exit 1
-    fi
+    (( $# )) || {
+        printf 'filename is required\n' >&2
+        printf '%s\n' "$HELP_HINT" >&2
+        return 1
+    }
 
-    local archiveFilename=$1
-    shift 1
-    (( flagDate )) && archiveFilename+=-$( date +%Y%m%d )
-    (( flagTime )) && archiveFilename+=-$( date +%H%M%S )
+    local filename=$1
+    shift
 
-    if (( flagZip )); then
-        archiveFilename+=.zip
-    elif (( flagGzip )); then
-        archiveFilename+=.tar.gz
+    (( $# )) || {
+        printf 'target is required\n' >&2
+        printf '%s\n' "$HELP_HINT" >&2
+        return 1
+    }
+
+    local cmd
+    if (( opt_zip )); then
+        cmd="zip -r"
+        (( opt_verbose )) && cmd+=v
     else
-        archiveFilename+=.tar
+        cmd="tar -c"
+        (( opt_gzip )) && cmd+=z
+        (( opt_verbose )) && cmd+=v
+        cmd+=f
     fi
 
-    if (( ! $# )); then
-        echo "requires targets"
-        echo "$STRING_HELP_INFO"
-        exit 1
-    fi
+    (( opt_date )) && filename+=-$( date +%Y%m%d )
+    (( opt_time )) && filename+=-$( date +%H%M%S )
 
-    local verboseOption
-    (( flagVerbose )) && verboseOption=v
-
-    local archiveCommand
-    if (( flagZip )); then
-        archiveCommand="zip -r$verboseOption"
-    elif (( flagGzip )); then
-        archiveCommand="tar -cz${verboseOption}f"
+    if (( opt_zip )); then
+        filename+=.zip
+    elif (( opt_gzip )); then
+        filename+=.tar.gz
     else
-        archiveCommand="tar -c${verboseOption}f"
+        filename+=.tar
     fi
 
-    if (( flagDryRun )); then
-        echo "$archiveCommand $archiveFilename $@"
+    if (( opt_dry_run )); then
+        printf '%s\n' "$cmd $filename $*"
     else
-        $archiveCommand "$archiveFilename" "$@"
+        $cmd "$filename" "$@"
     fi
 }
 

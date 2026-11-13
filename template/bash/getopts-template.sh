@@ -1,82 +1,78 @@
 #!/usr/bin/env bash
 
-# ========================
-# -------- string --------
-# ========================
+: # enable line-specific shellcheck suppression
 
-readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
+# shellcheck disable=SC2155
+readonly HELP_HINT="Try '$( basename "$0" ) -h' for more information."
 
-readonly STRING_HELP=$( cat << EOF
+# shellcheck disable=SC2155
+readonly HELP_MAIN=$( cat << EOF
+getopts template
+
 Usage:
-    $( basename "$0" ) (option...) [task]
+    $( basename "$0" ) [OPTION]... COMMAND
 
-Tasks:
-    help    print help messages
+Commands:
+    help    display help information
 
 Options:
-    -v    enable verbose
-    -h    print help messages
+    -v    enable verbose output
+    -h    display this help and exit
 EOF
 )
 
-# ==========================
-# -------- function --------
-# ==========================
-
-function getopts_printError()
+main()
 {
-    if [[ -n $2 ]]; then
-        case $1 in
-            :) echo "option requires an argument: -$2" ;;
-            ?) echo "invalid option: -$2" ;;
-            *) echo "unknown error" ;;
-        esac
-    fi
-}
+    local opt_filename
+    local opt_verbose=0
 
-# ======================
-# -------- main --------
-# ======================
-
-function main()
-{
-    local filename
-    local flagVerbose=0
-
-    OPTIND=1
+    local OPTIND=1 OPTARG opt
     while getopts :f:vh opt; do
         case $opt in
-            f) filename=$OPTARG ;;
-            v) flagVerbose=1 ;;
+            f) opt_filename=$OPTARG ;;
+            v) opt_verbose=1 ;;
             h)
-                echo "$STRING_HELP"
-                exit 0
+                printf '%s\n' "$HELP_MAIN"
+                return 0
+                ;;
+            :)
+                [[ -n $OPTARG ]] && \
+                    printf 'option requires an argument: -%s\n' "$OPTARG" >&2
+                printf '%s\n' "$HELP_HINT" >&2
+                return 1
+                ;;
+            \?)
+                [[ -n $OPTARG ]] && \
+                    printf 'invalid option: -%s\n' "$OPTARG" >&2
+                printf '%s\n' "$HELP_HINT" >&2
+                return 1
                 ;;
             *)
-                getopts_printError "$opt" "$OPTARG"
-                echo "$STRING_HELP_INFO"
-                exit 1
+                printf 'unexpected error\n' >&2
+                return 1
                 ;;
         esac
     done
     shift $(( OPTIND - 1 ))
 
-    if (( ! $# )); then
-        echo "requires a task"
-        echo "$STRING_HELP_INFO"
-        exit 1
-    fi
+    (( $# )) || {
+        printf 'command is required\n' >&2
+        printf '%s\n' "$HELP_HINT" >&2
+        return 1
+    }
 
-    local task=$1
-    case $task in
+    local cmd=$1
+    shift
+
+    case $cmd in
         help)
-            echo "$STRING_HELP"
-            exit 0
+            printf '%s\n' "$HELP_MAIN"
+            return 0
             ;;
         *)
-            echo "invalid task: $task"
-            echo "$STRING_HELP_INFO"
-            exit 1
+            printf 'invalid command: %s\n' "$cmd" >&2
+            printf '%s\n' "$HELP_HINT" >&2
+            return 1
             ;;
     esac
 }

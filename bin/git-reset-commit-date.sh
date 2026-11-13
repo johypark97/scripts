@@ -1,122 +1,108 @@
 #!/usr/bin/env bash
 
-# =======================
-# -------- const --------
-# =======================
+: # enable line-specific shellcheck suppression
 
 readonly BASE_COMMAND=git-filter-repo
 
+# shellcheck disable=SC2155
 readonly CALLBACK_SCRIPT=$( cat << EOF
 commit.committer_date = commit.author_date
 EOF
 )
 
-# ========================
-# -------- string --------
-# ========================
+# shellcheck disable=SC2155
+readonly HELP_HINT="Try '$( basename "$0" ) -h' for more information."
 
-readonly STRING_HELP_INFO="Try '$( basename "$0" ) -h' for more information."
-
-readonly STRING_HELP=$( cat << EOF
-  Reset the commit date to the author date by the specified number of commits
+# shellcheck disable=SC2155
+readonly HELP_MAIN=$( cat << EOF
+Reset the commit date to the author date by the specified number of commits
 from HEAD.
 
 Usage:
-    $( basename "$0" ) [count] (arg...)
+    $( basename "$0" ) COUNT [ARG]...
 
-    count     set the number of commits to reset
+    count    set the number of commits to reset
 
 Options:
-    -h           print help messages
+    -h    display this help and exit
 
 Args:
-    Additional arguments to be passed to $BASE_COMMAND.
+    Additional arguments to pass to $BASE_COMMAND.
 EOF
 )
 
-# ==========================
-# -------- function --------
-# ==========================
-
-function getopts_printError()
+confirm_yes_no()
 {
-    if [[ -n $2 ]]; then
-        case $1 in
-            :) echo "option requires an argument: -$2" ;;
-            ?) echo "invalid option: -$2" ;;
-            *) echo "unknown error" ;;
-        esac
-    fi
-}
-
-function checkCommand()
-{
-    command -v "$1" > /dev/null || {
-        echo "cannot find command '$1'" >&2
-        false
-    }
-}
-
-function confirmYesNo()
-{
-    local value
+    local prompt=${1:?prompt is required}
     while :; do
-        read -ep "$1 (y/N): " value
-        value=${value:-N}
+        read -erp "$prompt (y/N): " value
+        local value=${value:-N}
         case $value in
-            Y | y) true; return ;;
-            N | n) false; return ;;
-            *) echo "invalid input: $value" ;;
+            Y | y) return 0 ;;
+            N | n) return 1 ;;
+            *) printf 'invalid input: %s\n' "$value" >&2 ;;
         esac
     done
 }
 
-# ======================
-# -------- main --------
-# ======================
-
-function main()
+main()
 {
-    checkCommand $BASE_COMMAND || {
-        echo "please install the following packages:"
-        echo "- git-filter-repo"
-        exit 1
+    command -v "$BASE_COMMAND" > /dev/null || {
+        printf '%s is not installed\n' "$BASE_COMMAND" >&2
+        printf 'please install the %s using package manager or python3-pip\n' "$BASE_COMMAND" >&2
+        return 1
     }
 
-    OPTIND=1
+    local OPTIND=1 OPTARG opt
     while getopts :h opt; do
         case $opt in
             h)
-                echo "$STRING_HELP"
-                exit 0
+                printf '%s\n' "$HELP_MAIN"
+                return 0
+                ;;
+            :)
+                [[ -n $OPTARG ]] && \
+                    printf 'option requires an argument: -%s\n' "$OPTARG" >&2
+                printf '%s\n' "$HELP_HINT" >&2
+                return 1
+                ;;
+            \?)
+                [[ -n $OPTARG ]] && \
+                    printf 'invalid option: -%s\n' "$OPTARG" >&2
+                printf '%s\n' "$HELP_HINT" >&2
+                return 1
                 ;;
             *)
-                getopts_printError "$opt" "$OPTARG"
-                echo "$STRING_HELP_INFO"
-                exit 1
+                printf 'unexpected error\n' >&2
+                return 1
                 ;;
         esac
     done
     shift $(( OPTIND - 1 ))
 
-    if (( ! $# )); then
-        echo "requires a count"
-        echo "$STRING_HELP_INFO"
-        exit 1
-    fi
+    (( $# )) || {
+        printf 'count is required\n' >&2
+        printf '%s\n' "$HELP_HINT" >&2
+        return 1
+    }
+
     local count=$1
-    shift 1
+    shift
+
+    [[ $count =~ ^[0-9]+$ ]] || {
+        printf 'count is not numeric\n' >&2
+        return 1
+    }
+    count=$(( 10#$count ))
 
     local cmd=$BASE_COMMAND
     cmd+=" --refs HEAD~$count..HEAD"
-    cmd+=" $@"
+    cmd+=" $*"
 
-    echo "The following command will be executed if you continue."
-    echo
-    echo $cmd
-    echo "    --commit-callback '$CALLBACK_SCRIPT'"
-    echo
-    confirmYesNo "Do you want to proceed?" || exit 0
+    printf 'The following command will be executed if you continue.\n\n'
+    printf '%s\n    --commit-callback %s\n\n' "$cmd" "'$CALLBACK_SCRIPT'"
+
+    confirm_yes_no "Do you want to proceed?" || return 0
 
     $cmd --commit-callback "$CALLBACK_SCRIPT"
 }

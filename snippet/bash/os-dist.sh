@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 
-# ======================
-# -------- main --------
-# ======================
+: # enable line-specific shellcheck suppression
 
-function main()
-{
-    local -r OS_DIST=$( awk -F = '$1 == "ID" { print $2 }' /etc/os-release )
-    local -r OS_DIST_FAMILY=$( awk -F = 'BEGIN { flag = 1; result = "" } $1 ~ /^ID(_LIKE)?$/ { if (flag) { result = $2; if ($1 == "ID_LIKE") flag = 0 } } END { print result }' /etc/os-release )
+# shellcheck disable=SC2155
+readonly OS_DIST=$( awk -F = '$1 == "ID" { print $2 }' /etc/os-release )
 
-    echo "OS_DIST: $OS_DIST"
-    echo "OS_DIST_FAMILY: $OS_DIST_FAMILY"
-}
+# shellcheck disable=SC2155
+readonly OS_DIST_FAMILY=$( awk -F = 'BEGIN { flag = 1; result = "" } $1 ~ /^ID(_LIKE)?$/ { if (flag) { result = $2; if ($1 == "ID_LIKE") flag = 0 } } END { print result }' /etc/os-release )
 
-main "$@"
+printf 'OS_DIST: %s\n' "$OS_DIST"
+printf 'OS_DIST_FAMILY: %s\n' "$OS_DIST_FAMILY"
