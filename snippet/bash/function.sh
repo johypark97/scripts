@@ -20,7 +20,7 @@ confirm_yes_no()
 {
     local prompt=${1:?prompt is required}
     while :; do
-        read -erp "$prompt (y/N): " value
+        read -erp "$prompt (y/N): " value || return 1
         local value=${value:-N}
         case $value in
             Y | y) return 0 ;;

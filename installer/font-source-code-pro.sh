@@ -6,7 +6,7 @@ check_packages()
 {
     : "${@:?argument is required}"
 
-    local not_found
+    local -a not_found
 
     local package
     for package in "$@"; do

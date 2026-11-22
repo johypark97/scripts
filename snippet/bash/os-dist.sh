@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-: # enable line-specific shellcheck suppression
+: # for line-specific ShellCheck suppression
 
 # shellcheck disable=SC2155
 readonly OS_DIST=$( awk -F = '$1 == "ID" { print $2 }' /etc/os-release )

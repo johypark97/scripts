@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-: # enable line-specific shellcheck suppression
+: # for line-specific ShellCheck suppression
 
 # shellcheck disable=SC2155
 readonly HELP_HINT="Try '$( basename "$0" ) -h' for more information."
