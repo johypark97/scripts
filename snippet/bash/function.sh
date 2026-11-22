@@ -30,6 +30,13 @@ confirm_yes_no()
     done
 }
 
+dpkg_is_installed() {
+    [[ -n ${1-} ]] || return 1
+    local status
+    status=$( dpkg-query -W -f='${Status}' "$1" 2>/dev/null ) || return 1
+    [[ $status == "install ok installed" ]]
+}
+
 # https://stackoverflow.com/a/5032641
 strindex()
 {
