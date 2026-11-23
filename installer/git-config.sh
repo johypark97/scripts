@@ -14,6 +14,17 @@ confirm_yes_no()
     done
 }
 
+find_credential_helper()
+{
+    local -r WINDOWS_GCM_PATH="/mnt/c/Program Files/Git/ucrt64/bin/git-credential-manager.exe"
+
+    local helper=store
+    if grep -iq WSL /proc/version; then
+        [[ -x $WINDOWS_GCM_PATH ]] && helper=$WINDOWS_GCM_PATH
+    fi
+    printf '%q' "$helper"
+}
+
 main()
 {
     local -r GIT_CONFIG_COMMAND="git config --global"
@@ -27,7 +38,7 @@ main()
         [core.autocrlf]=input
         [core.editor]=vi
         [core.filemode]=true
-        [credential.helper]=store
+        [credential.helper]=$( find_credential_helper )
         [init.defaultBranch]=main
         [pull.ff]=only
         [pull.rebase]=false
