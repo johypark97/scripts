@@ -43,3 +43,10 @@ strindex()
     local x=${1%%"$2"*}
     [[ $x == "$1" ]] && printf '%d' -1 || printf '%d' "${#x}"
 }
+
+trim() {
+    local x=${1?argument is required}
+    x=${x#"${x%%[![:space:]]*}"}
+    x=${x%"${x##*[![:space:]]}"}
+    printf '%s' "$x"
+}
